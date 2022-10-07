@@ -27,13 +27,13 @@ public class AdvertisementController {
 	AdvertisementService advertisementService;
 
 	@PostMapping("/createAdvertisement")
-	public ResponseDto advertisementEntity(@Valid @RequestBody AdvertisementEntity request) {
+	public ResponseDto addAdvertisement(@Valid @RequestBody AdvertisementEntity request) {
 		log.info("creating advertisement for request {}", request);
 		return advertisementService.addAdvertisement(request);
 	}
 	
-	@DeleteMapping("deleteAdvertis" + "/{advertisingId}")
-	public ResponseDto deleteAdvertising(@PathVariable final Long advertisingId) {
+	@DeleteMapping("deleteAdvertisement" + "/{advertisingId}")
+	public ResponseDto deleteAdvertisement(@PathVariable final Long advertisingId) {
 		log.info("deleting advertising for request {}", advertisingId);
 		return advertisementService.deleteAdvertisement(advertisingId);
 	}

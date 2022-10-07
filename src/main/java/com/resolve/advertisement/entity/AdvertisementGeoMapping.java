@@ -13,18 +13,18 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "advertisment_geo_mapping")
 @NoArgsConstructor
-public class AdvertismentGeoMapping {
+public class AdvertisementGeoMapping {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	private Long geoId;
-	private Long advId;
+	private Long addId;
 
-	public AdvertismentGeoMapping(Long geoId, Long advId) {
+	public AdvertisementGeoMapping(Long geoId, Long addId) {
 		super();
 		this.geoId = geoId;
-		this.advId = advId;
+		this.addId = addId;
 	}
 
 }

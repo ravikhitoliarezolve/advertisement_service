@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 public class Geo {
 	
-    private Long geoId;
+    private Long Id;
     private Double latitude;
     private Double longitude;
     private Double radius;
