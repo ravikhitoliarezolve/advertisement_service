@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +28,8 @@ import org.springframework.web.client.RestTemplate;
 
 import com.advertisement.AppConstantTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.resolve.advertisement.dto.AdvertisementResponseDto;
+import com.resolve.advertisement.dto.Geo;
 import com.resolve.advertisement.dto.GeoDto;
 import com.resolve.advertisement.dto.ResponseDto;
 import com.resolve.advertisement.entity.AdvertisementEntity;
@@ -52,8 +55,8 @@ public class ServiceTest {
 	
 	@Mock
 	HaversineDistanceCalculator haversineDistanceCalculator;
-	List<AdvertisementEntity>  AdvertisementEntity=new ArrayList<>();
-	List<AdvertisementGeoMapping> AdvertisementGeoMappings= new ArrayList<>();
+	List<AdvertisementEntity>  advertisementEntities=new ArrayList<>();
+	List<AdvertisementGeoMapping> advertisementGeoMappings= new ArrayList<>();
 	
 	@BeforeEach
     public void setup() {
@@ -82,6 +85,31 @@ public class ServiceTest {
         ResponseDto advertisingModelResponse = advertisementService.addAdvertisement(advertisementEntity);
         Assertions.assertEquals(200, advertisingModelResponse.getCode());
     }
+	
+	@Test
+    void getAdvertisement() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        GeoDto geoFencesDto = mapper.readValue(AppConstantTest.GEO_RESPONSE, GeoDto.class);
+        when(restTemplate.getForEntity(Mockito.anyString(), Mockito.any(Class.class)))
+                .thenReturn(ResponseEntity.ok(geoFencesDto));
+        given(haversineDistanceCalculator.checkInside(Mockito.any(), Mockito.any(), Mockito.any())).willReturn(true);
+        List<Geo> geoFences = (List<Geo>) advertisementService
+                .getAdvertisement(advertisementEntity.getLatitude(), advertisementEntity.getLongitude()).getData();
+        Assertions.assertEquals(2, geoFences.size());
+    }
+	
+	 @Test
+	    void getAdvertisInsideGeo() throws Exception {
+	        ObjectMapper mapper = new ObjectMapper();
+	        GeoDto geoDto = mapper.readValue(AppConstantTest.GEO_RESPONSE, GeoDto.class);
+	        given(advertisGeoMappingRepository.findByGeoIds(Mockito.any())).willReturn(advertisementGeoMappings);
+	        given(advertisementRepository.findAllById(Mockito.any())).willReturn(advertisementEntities);
+	        when(restTemplate.getForEntity(Mockito.anyString(), Mockito.any(Class.class)))
+	                .thenReturn(ResponseEntity.ok(geoDto));
+	        Collection<AdvertisementResponseDto> geos = (Collection<AdvertisementResponseDto>) advertisementService
+	                .getAdvertisementInsideGeo(advertisementEntity.getLatitude(), advertisementEntity.getLongitude()).getData();
+	        Assertions.assertEquals(0, geos.size());
+	    }
 	
 	@Test
     void advertisementEntity_invalidUrl() {

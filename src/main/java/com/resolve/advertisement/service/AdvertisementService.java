@@ -2,9 +2,13 @@ package com.resolve.advertisement.service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
@@ -20,6 +24,8 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.resolve.advertisement.constants.ApplicationConstants;
+import com.resolve.advertisement.dto.AdvertisementDto;
+import com.resolve.advertisement.dto.AdvertisementResponseDto;
 import com.resolve.advertisement.dto.ErrorResponseDto;
 import com.resolve.advertisement.dto.Geo;
 import com.resolve.advertisement.dto.GeoDto;
@@ -155,6 +161,47 @@ public class AdvertisementService {
 		return geoDto.getData();
 
 	}
+	
+	public ResponseDto getAdvertisementInsideGeo(Double latitude, Double longitude) {
+        List<Geo> geoList = checkInsideGeoFences(getGeoList(), latitude, longitude);
+        List<Long> geoIds = geoList.parallelStream().map(Geo::getId).collect(Collectors.toList());
+        List<AdvertisementGeoMapping> advertisGeoMappings = advertisementGeoMappingRepository.findByGeoIds(geoIds);
+        List<Long> adIds = advertisGeoMappings.parallelStream().map(AdvertisementGeoMapping::getAddId).collect(Collectors.toList());
+        List<AdvertisementEntity> advertisEntities = advertisementRepository.findAllById(adIds);
+        Map<Long, AdvertisementEntity> advertisEntityMap = advertisEntities.stream().collect(Collectors.toMap(AdvertisementEntity::getAddId, Function.identity()));
+        Map<Long, Geo> geoMap = geoList.stream().collect(Collectors.toMap(Geo::getId, Function.identity()));
+        AdvertisementResponseDto responseDto;
+        Map<Long, AdvertisementResponseDto> response = new HashMap<>();
+        AdvertisementDto advertisingDto;
+        for (AdvertisementGeoMapping advertisGeoMapping : advertisGeoMappings) {
+            
+            AdvertisementEntity advertisingModel = advertisEntityMap.get(advertisGeoMapping.getAddId());
+            Geo geoFence = geoMap.get(advertisGeoMapping.getGeoId());
+            if (response.get(advertisGeoMapping.getGeoId()) == null) {
+                responseDto = new AdvertisementResponseDto();
+                responseDto.setId(geoFence.getId());
+                responseDto.setLongitude(geoFence.getLongitude());
+                responseDto.setLatitude(geoFence.getLatitude());
+                responseDto.setRadius(geoFence.getRadius());
+                advertisingDto = new AdvertisementDto(advertisingModel);
+                double distance = haversineDistanceCalculator.haversineDistance(geoFence.getLongitude(), geoFence.getLatitude(), advertisingModel.getLongitude(), advertisingModel.getLatitude());
+                advertisingDto.setDistance(distance);
+                responseDto.getAdvertisingModelList()
+                .add(advertisingDto);
+                response.put(geoFence.getId(),responseDto);
+                
+            }
+            else {
+                AdvertisementResponseDto responseDto1 =  response.get(advertisGeoMapping.getGeoId());
+                advertisingDto = new AdvertisementDto(advertisingModel);
+                double distance = haversineDistanceCalculator.haversineDistance(geoFence.getLongitude(), geoFence.getLatitude(), advertisingModel.getLongitude(), advertisingModel.getLatitude());
+                advertisingDto.setDistance(distance);
+                responseDto1.getAdvertisingModelList().add(advertisingDto);
+            }
+            
+        }
+        return new SuccessResponseDto(response.values());
+    }
 
 	public int validateHrefUrl(String href) {
 		HttpHeaders headers = new HttpHeaders();
